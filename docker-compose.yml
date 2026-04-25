@@ -1,5 +1,4 @@
 # ═══════════════════════════════════════════════════════════
-#  KeaBuilder ML Service — Full Stack
 #
 #  Services:
 #    - ml-service:  FastAPI ML API (port 8000)

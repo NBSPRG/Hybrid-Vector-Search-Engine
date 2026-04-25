@@ -9,7 +9,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-# Install PyTorch CPU version first to avoid 2.5GB CUDA download
+# OPTIMIZATION: Install PyTorch CPU version first.
+# By default, pip installs the CUDA GPU version which is ~3 GB. 
+# Forcing the CPU wheel drops the size to ~150 MB, preventing OOM errors and bloated images.
 RUN pip install --no-cache-dir --prefix=/install torch --index-url https://download.pytorch.org/whl/cpu
 # Install remaining requirements
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
