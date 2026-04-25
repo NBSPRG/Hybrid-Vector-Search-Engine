@@ -50,3 +50,51 @@ Gather 15–20 high-quality photos of the face, crop and label them with a trigg
 * **Machine Learning:** PyTorch, SentenceTransformers, Hugging Face, Qdrant Vector DB
 * **Backend:** Python, Go, Node.js, FastAPI, Celery, Redis
 * **DevOps:** Docker, Docker Compose, GitHub Actions, Linux
+
+---
+
+## Sample API Outputs
+
+**1. Embedding a Document (`POST /embed`)**
+*Request:*
+```json
+{
+  "text": "How do I create a landing page?",
+  "payload": {"type": "prompt"}
+}
+```
+*Response:*
+```json
+{
+  "id": "e67b2a9d-1c3f-4e5d-8b2a-1c3f4e5d8b2a",
+  "model": "minilm",
+  "dim": 384
+}
+```
+
+**2. Similarity Search (`POST /similarity`)**
+*Request:*
+```json
+{
+  "query": "How do I make an e-commerce website?",
+  "top_k": 1,
+  "method": "hybrid"
+}
+```
+*Response:*
+```json
+{
+  "query": "How do I make an e-commerce website?",
+  "method": "hybrid",
+  "model": "minilm",
+  "results": [
+    {
+      "id": "e67b2a9d-1c3f-4e5d-8b2a-1c3f4e5d8b2a",
+      "score": 0.85,
+      "payload": {"type": "prompt"}
+    }
+  ],
+  "latency_ms": 45.2,
+  "total_indexed": 150
+}
+```

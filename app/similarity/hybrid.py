@@ -95,9 +95,10 @@ class HybridSearch:
         fused_sorted = sorted(fused.values(), key=lambda x: x["rrf_score"], reverse=True)
         results = fused_sorted[:top_k]
 
-        # Add final ranks
+        # Add final ranks and map rrf_score to score
         for rank, item in enumerate(results, 1):
             item["rank"] = rank
+            item["score"] = item["rrf_score"]
 
         logger.info(
             "hybrid_search_complete",
