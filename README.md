@@ -15,7 +15,7 @@ This project implements a sidecar architecture, the standard pattern for serving
 
 > **Note on Training Code:** 
 > The Knowledge Distillation training pipeline was executed on a GPU in Google Colab. 
-> [Insert Google Colab Link Here]
+> [Google Colab Notebook](https://colab.research.google.com/drive/1jXZ0yEBCgYpH2bY7Z4tEs2YF0Za55eAH?usp=sharing)
 > 
 > The resulting artifact (`student_model.pt`) is stored in the `/artifacts` directory. The training scripts are omitted from this production repository to keep it lightweight.
 
@@ -95,3 +95,4 @@ Poll the status of the async job. Returns `pending`, `running`, `done`, or `fail
 ### 4. Ops
 **`GET /health`**
 Liveness probe. Returns system status, loaded models, and database connectivity.
+
