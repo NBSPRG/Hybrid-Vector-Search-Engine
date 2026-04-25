@@ -38,11 +38,11 @@ class ModelStatus(str, Enum):
 DEFAULT_MODEL_CONFIG = {
     "models": {
         "student": {
-            "status": ModelStatus.ACTIVE,
+            "status": ModelStatus.AVAILABLE,
             "dim": 128,
         },
         "minilm": {
-            "status": ModelStatus.AVAILABLE,
+            "status": ModelStatus.ACTIVE,
             "dim": 384,
         },
         "teacher": {

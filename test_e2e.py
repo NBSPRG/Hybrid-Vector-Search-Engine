@@ -13,13 +13,13 @@ try:
     r = requests.get(f"{BASE_URL}/health")
     print(json.dumps(r.json(), indent=2))
 
-    # 2. Check Feature Flags (Default should be student)
+    # 2. Check Feature Flags (Default should be minilm)
     print_section("2. Feature Flags")
     r = requests.get(f"{BASE_URL}/flags")
     print("Current Flags:", json.dumps(r.json(), indent=2))
 
     # 3. Embed some documents
-    print_section("3. Embedding Documents (using Student Model)")
+    print_section("3. Embedding Documents (using MiniLM Model)")
     docs = [
         "KeaBuilder is the best landing page tool for SaaS",
         "We offer a seamless drag-and-drop website builder experience",
@@ -44,8 +44,8 @@ try:
     print(json.dumps(r.json(), indent=2))
 
     # 6. Switch Model using Feature Flags
-    print_section("6. Switch Model to MiniLM via Feature Flag")
-    r = requests.put(f"{BASE_URL}/flags/active-model/minilm")
+    print_section("6. Switch Model to Student via Feature Flag")
+    r = requests.put(f"{BASE_URL}/flags/active-model/student")
     print("Flag Update:", r.json())
     
     # 7. Async Job

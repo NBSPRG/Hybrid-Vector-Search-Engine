@@ -2,6 +2,17 @@
 
 An intelligent, production-grade ML microservice designed to act as a sidecar to the KeaBuilder Node.js backend. This service provides semantic search, embeddings, and feature-flagged model switching.
 
+## Node.js Integration Flow
+
+KeaBuilder Node.js backend remains the primary API gateway. This Python service is called over REST:
+
+1. Node.js -> `POST /embed` when users create landing pages/prompts.
+2. Node.js -> `POST /similarity` for synchronous search and ranking.
+3. Node.js -> `POST /predict/async` for heavy jobs that should run in background.
+4. Node.js -> `GET /job/{job_id}` to poll async task completion.
+
+This keeps ML compute isolated from the Node.js event loop while preserving simple HTTP integration.
+
 ## 🏗 Architecture Overview
 
 This project implements a sidecar architecture, the standard pattern for serving ML models alongside Node.js backends (used by companies like Netflix and Uber).
@@ -96,3 +107,62 @@ Poll the status of the async job. Returns `pending`, `running`, `done`, or `fail
 **`GET /health`**
 Liveness probe. Returns system status, loaded models, and database connectivity.
 
+---
+
+## 🤖 Model Selection Guide
+
+This service ships with three encoder models, each suited for different scenarios. The active model can be switched at runtime via feature flags — no redeployment needed.
+
+| Model | Dimensions | Size | Speed | Accuracy | Best For |
+|-------|-----------|------|-------|----------|----------|
+| **MiniLM** (`minilm`) | 384 | ~80 MB | ⚡ Fast | ✅ Good | Development, demos, production baseline |
+| **Student** (`student`) | 128 | ~5 MB | ⚡⚡ Fastest | ⚠️ Requires teacher | Cost-sensitive production at scale |
+| **Teacher** (`teacher`) | 768 | ~420 MB | 🐢 Slow | ✅✅ Best | Offline indexing, training data generation |
+
+### When to use MiniLM (Default)
+- **Local development & demos** — works out of the box with real semantic embeddings
+- **Production baseline** — strong accuracy-to-speed ratio, no extra setup needed
+- **E2E testing** — gives meaningful similarity search results immediately
+
+```bash
+# Set MiniLM as default
+PUT /flags/active-model/minilm
+```
+
+### When to use Student
+- **Production at scale** — 3× smaller vectors (128 vs 384) = lower storage & faster search
+- **High-throughput inference** — lightweight MLP, no transformer overhead at query time
+- **Cost-sensitive deployments** — smaller Qdrant collections, less memory
+
+> ⚠️ **Important:** The student model requires the **teacher model** to be loaded to produce meaningful embeddings. The student pipeline is: `text → teacher.encode() → StudentMLP → 128-dim`.
+>
+> In **development mode** (without the teacher), the student uses random projections as a fallback — embeddings will be valid but **not semantically meaningful**. This is by design for testing the pipeline.
+>
+> To use the student model with real embeddings:
+> 1. Set `APP_ENV=production` (or `staging`) so the teacher loads at startup
+> 2. Ensure `artifacts/student_model.pt` exists (trained via knowledge distillation)
+> 3. Switch: `PUT /flags/active-model/student`
+
+### When to use Teacher
+- **Offline batch indexing** — highest quality embeddings for building the initial vector index
+- **Training the student** — generates the target embeddings for knowledge distillation
+- **Quality benchmarking** — compare student/minilm results against the teacher baseline
+
+> The teacher model (`all-mpnet-base-v2`) is **not loaded in development mode** to save memory. Set `APP_ENV=staging` or `production` to enable it.
+
+### Switching Models at Runtime
+
+```bash
+# Check current model
+GET /flags
+
+# Switch to a different model (takes effect immediately)
+PUT /flags/active-model/minilm
+PUT /flags/active-model/student
+
+# Per-request override (without changing the global default)
+POST /embed  {"text": "...", "model": "minilm"}
+POST /similarity  {"query": "...", "model": "student"}
+```
+
+> **Note on vector dimensions:** When switching between models with different dimensions (e.g., MiniLM 384-dim → Student 128-dim), the Qdrant collection is automatically recreated. This clears existing vectors since they are incompatible across dimensions. In production, use separate collections per model to avoid this.

@@ -198,11 +198,26 @@ async def embed_text(request: EmbedRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    doc_id = dense.index(
-        text=request.text,
-        encoder=encoder,
-        payload=request.payload,
-    )
+    # Auto-recreate Qdrant collection if vector dim changed (model switch)
+    qdrant: QdrantManager = _state["qdrant"]
+    if encoder.dim != qdrant._vector_dim:
+        logger.warning(
+            "dimension_mismatch",
+            collection_dim=qdrant._vector_dim,
+            model_dim=encoder.dim,
+            msg="Recreating collection to match active model",
+        )
+        qdrant.recreate_collection(encoder.dim)
+
+    try:
+        doc_id = dense.index(
+            text=request.text,
+            encoder=encoder,
+            payload=request.payload,
+        )
+    except Exception as exc:
+        logger.error("embed_failed", error=str(exc))
+        raise HTTPException(status_code=500, detail=f"Embedding failed: {exc}")
 
     return EmbedResponse(
         id=doc_id,
@@ -226,6 +241,17 @@ async def similarity_search(request: SimilarityRequest):
         encoder = router.route(request.model)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+    # Auto-recreate Qdrant collection if vector dim changed (model switch)
+    qdrant: QdrantManager = _state["qdrant"]
+    if encoder.dim != qdrant._vector_dim:
+        logger.warning(
+            "dimension_mismatch",
+            collection_dim=qdrant._vector_dim,
+            model_dim=encoder.dim,
+            msg="Recreating collection to match active model",
+        )
+        qdrant.recreate_collection(encoder.dim)
 
     if request.method == "dense":
         results = _state["dense"].search(
